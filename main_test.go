@@ -10,11 +10,20 @@ import (
 )
 
 var _ = Describe("Main", func() {
-	It("fails when no request is provided", func() {
+	It("prints usage when request method is GET", func() {
 		w := &spyWriter{}
-		Interrupt(w, &http.Request{})
+		Interrupt(w, &http.Request{Method: http.MethodGet})
 
 		Expect(w.headers).To(ConsistOf(200))
+		Expect(string(w.body)).To(Equal(Usage()))
+	})
+
+	It("rejects unknown request methods", func() {
+		w := &spyWriter{}
+		Interrupt(w, &http.Request{Method: http.MethodPut})
+
+		Expect(w.headers).To(ConsistOf(405))
+		Expect(string(w.body)).To(BeEmpty())
 	})
 })
 
@@ -31,7 +40,8 @@ func (s *spyWriter) Header() http.Header {
 
 // spyWriter implements http.ResponseWriter
 func (s *spyWriter) Write(b []byte) (int, error) {
-	return 0, nil
+	s.body = append(s.body, b...)
+	return len(b), nil
 }
 
 // spyWriter implements http.ResponseWriter

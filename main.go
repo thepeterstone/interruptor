@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 
@@ -16,6 +15,17 @@ func main() {
 }
 
 func Interrupt(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(fmt.Sprintf("%+v", r)))
+	if r.Method == http.MethodGet {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(Usage()))
+		return
+	}
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+}
+
+func Usage() string {
+	return "Use in slack with <code>/interrupt [users]</code>"
 }
