@@ -10,8 +10,15 @@ import (
 )
 
 var _ = Describe("Main", func() {
+	var (
+		w *spyWriter
+	)
+
+	BeforeEach(func() {
+		w = &spyWriter{}
+	})
+
 	It("prints usage when request method is GET", func() {
-		w := &spyWriter{}
 		Interrupt(w, &http.Request{Method: http.MethodGet})
 
 		Expect(w.headers).To(ConsistOf(200))
@@ -19,7 +26,6 @@ var _ = Describe("Main", func() {
 	})
 
 	It("rejects unknown request methods", func() {
-		w := &spyWriter{}
 		Interrupt(w, &http.Request{Method: http.MethodPut})
 
 		Expect(w.headers).To(ConsistOf(405))
