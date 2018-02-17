@@ -18,11 +18,22 @@ var _ = Describe("Main", func() {
 		w = &spyWriter{}
 	})
 
+	It("", func() {
+
+	})
+
 	It("prints usage when request method is GET", func() {
 		Interrupt(w, &http.Request{Method: http.MethodGet})
 
 		Expect(w.headers).To(ConsistOf(200))
 		Expect(string(w.body)).To(Equal(Usage()))
+	})
+
+	It("prints interrupt message", func() {
+		req, _ := http.NewRequest(http.MethodPost, "/interrupt", nil)
+		Interrupt(w, req)
+
+		Expect(string(w.body)).To(MatchRegexp(`PM: @\w+ Interrupt: \w+`))
 	})
 
 	It("rejects unknown request methods", func() {

@@ -1,0 +1,9 @@
+---
+applications:
+- name: interruptor-bot
+  buildpack: go_buildpack
+  memory: 64M
+  env:
+    GOPACKAGENAME: interruptor
+    CHANNELS: C957XR88H
+    MESSAGE_PREFIX: "PM: @ahevenor Interrupt:"
