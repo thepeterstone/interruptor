@@ -23,7 +23,7 @@ func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/", Readme)
 	r.HandleFunc("/debug", interruptor.PostPrinter)
-	r.HandleFunc("/api", interruptor.ChallengeEchoer(cfg))
+	r.HandleFunc("/api", interruptor.SlackResponder(cfg))
 	//   r.HandleFunc("/interrupt", Interrupt)
 	//   r.HandleFunc("/interrupt-channels", InterruptChannels)
 

@@ -26,6 +26,7 @@ var _ = Describe("Challenge", func() {
 		body, err := json.Marshal(interruptor.SlackChallenge{
 			Challenge: "some-challenge-string",
 			SlackRequest: interruptor.SlackRequest{
+				Type:              "url_verification",
 				VerificationToken: "some-token",
 			},
 		})
@@ -35,7 +36,7 @@ var _ = Describe("Challenge", func() {
 		r, _ := http.NewRequest(http.MethodGet, "", bytes.NewReader(body))
 		w := newSpyWriter()
 
-		handler := interruptor.ChallengeEchoer(config)
+		handler := interruptor.SlackResponder(config)
 		handler(w, r)
 
 		Expect(w.text).To(ContainElement("some-challenge-string"))
@@ -45,6 +46,7 @@ var _ = Describe("Challenge", func() {
 		body, err := json.Marshal(interruptor.SlackChallenge{
 			Challenge: "some-challenge-string",
 			SlackRequest: interruptor.SlackRequest{
+				Type:              "url_verification",
 				VerificationToken: "invalid-token",
 			},
 		})
@@ -54,7 +56,7 @@ var _ = Describe("Challenge", func() {
 		r, _ := http.NewRequest(http.MethodGet, "", bytes.NewReader(body))
 		w := newSpyWriter()
 
-		handler := interruptor.ChallengeEchoer(config)
+		handler := interruptor.SlackResponder(config)
 		handler(w, r)
 
 		Expect(w.headers).To(ContainElement(http.StatusUnauthorized))
