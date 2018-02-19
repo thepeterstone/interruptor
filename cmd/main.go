@@ -11,17 +11,11 @@ import (
 	envstruct "github.com/cloudfoundry/go-envstruct"
 	"github.com/gorilla/mux"
 	"github.com/nlopes/slack"
+	"github.com/thepeterstone/interruptor"
 )
 
-type config struct {
-	ApiKey            string   `env:"ACCESS_TOKEN,required"`
-	VerificationToken string   `env:"VERIFICATION_TOKEN,required"`
-	MessagePrefix     string   `env:"MESSAGE_PREFIX"`
-	Channels          []string `env:"CHANNELS,required"`
-}
-
 var (
-	cfg *config
+	cfg *interruptor.Config
 )
 
 func main() {
@@ -29,6 +23,7 @@ func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/", Readme)
 	r.HandleFunc("/debug", PostPrinter)
+	r.HandleFunc("/challenge", interruptor.ChallengeEchoer(cfg))
 	r.HandleFunc("/interrupt", Interrupt)
 	r.HandleFunc("/interrupt-channels", InterruptChannels)
 
@@ -167,8 +162,8 @@ func setInterrupt(api *slack.Client, cmd slack.SlashCommand) {
 	}
 }
 
-func loadConfig() *config {
-	var cfg config
+func loadConfig() *interruptor.Config {
+	var cfg interruptor.Config
 	if err := envstruct.Load(&cfg); err != nil {
 		log.Fatalf("failed to load config: %s", err)
 	}

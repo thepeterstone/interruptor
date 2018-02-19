@@ -1,4 +1,4 @@
-package main_test
+package interruptor_test
 
 import (
 	"testing"
