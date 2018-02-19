@@ -22,10 +22,10 @@ func main() {
 	cfg = loadConfig()
 	r := mux.NewRouter()
 	r.HandleFunc("/", Readme)
-	r.HandleFunc("/debug", PostPrinter)
-	r.HandleFunc("/challenge", interruptor.ChallengeEchoer(cfg))
-	r.HandleFunc("/interrupt", Interrupt)
-	r.HandleFunc("/interrupt-channels", InterruptChannels)
+	r.HandleFunc("/debug", interruptor.PostPrinter)
+	r.HandleFunc("/api", interruptor.ChallengeEchoer(cfg))
+	//   r.HandleFunc("/interrupt", Interrupt)
+	//   r.HandleFunc("/interrupt-channels", InterruptChannels)
 
 	http.Handle("/", r)
 	log.Printf("%+v\n", cfg)
@@ -101,19 +101,6 @@ func InterruptChannels(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprintf(w, "OK, set interrupt channels to %s", names)
-}
-
-func PostPrinter(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
-	log.Printf("Request: %+v\n", r)
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("Error reading body: %s", err)
-		return
-	}
-
-	log.Printf("Body: %s", data)
-	w.WriteHeader(http.StatusOK)
 }
 
 func Readme(w http.ResponseWriter, _ *http.Request) {

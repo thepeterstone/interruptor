@@ -4,38 +4,58 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 )
 
-var (
-	log = DefaultLogger()
-)
+type SlackRequest struct {
+	VerificationToken string `json:"token"`
+}
+
+func (r *SlackRequest) validate(token string) bool {
+	return r.VerificationToken == token
+}
 
 type SlackChallenge struct {
-	Challenge         string `json:"challenge"`
-	VerificationToken string `json:"token"`
+	Challenge string `json:"challenge"`
+	SlackRequest
 }
 
 func ChallengeEchoer(cfg *Config) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var c SlackChallenge
 		t, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			log.Error(err)
+			log.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		if err := json.Unmarshal(t, &c); err != nil {
-			log.Error(err)
-			w.WriteHeader(http.StatusInternalServerError)
+		logRequest(r, t)
+
+		var q SlackRequest
+		if err := json.Unmarshal(t, &q); err != nil {
 			return
 		}
 
-		if c.VerificationToken != cfg.VerificationToken {
+		if !q.validate(cfg.VerificationToken) {
 			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		var c SlackChallenge
+		if err := json.Unmarshal(t, &c); err != nil {
+			PostPrinter(w, r)
 			return
 		}
 
 		fmt.Fprintf(w, "%s", c.Challenge)
 	}
+}
+
+func PostPrinter(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+}
+
+func logRequest(r *http.Request, t []byte) {
+	log.Printf("Request: %+v\n", r)
+	log.Printf("Body: %s\n", t)
 }

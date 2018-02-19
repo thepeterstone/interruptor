@@ -24,8 +24,10 @@ var _ = Describe("Challenge", func() {
 	})
 	It("echoes a json-encoded challenge", func() {
 		body, err := json.Marshal(interruptor.SlackChallenge{
-			Challenge:         "some-challenge-string",
-			VerificationToken: "some-token",
+			Challenge: "some-challenge-string",
+			SlackRequest: interruptor.SlackRequest{
+				VerificationToken: "some-token",
+			},
 		})
 		if err != nil {
 			panic(err)
@@ -41,8 +43,10 @@ var _ = Describe("Challenge", func() {
 
 	It("returns an authorization error if the token doesn't match", func() {
 		body, err := json.Marshal(interruptor.SlackChallenge{
-			Challenge:         "some-challenge-string",
-			VerificationToken: "invalid-token",
+			Challenge: "some-challenge-string",
+			SlackRequest: interruptor.SlackRequest{
+				VerificationToken: "invalid-token",
+			},
 		})
 		if err != nil {
 			panic(err)
