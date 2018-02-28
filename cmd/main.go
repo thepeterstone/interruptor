@@ -10,26 +10,22 @@ import (
 	"github.com/thepeterstone/interruptor"
 )
 
-var (
-	cfg *interruptor.Config
-)
-
 func main() {
-	cfg = loadConfig()
+	cfg := loadConfig()
 	r := mux.NewRouter()
 	r.HandleFunc("/", Readme)
 	r.HandleFunc("/api", interruptor.SlackResponder(cfg, &log.Logger{}))
 
 	http.Handle("/", r)
-	log.Printf("%+v\n", cfg)
 
 	log.Println("Starting interruptor server...")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
+// Readme writes the readme file to the provided ResponseWriter
 func Readme(w http.ResponseWriter, _ *http.Request) {
 	readme, _ := ioutil.ReadFile("README.md")
-	w.Write(readme)
+	_, _ = w.Write(readme)
 }
 
 func loadConfig() *interruptor.Config {

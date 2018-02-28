@@ -12,6 +12,7 @@ import (
 	"github.com/nlopes/slack"
 )
 
+// SlackRequest is a basic envelope from the Slack API
 type SlackRequest struct {
 	VerificationToken string `json:"token"`
 	Type              string `json:"type"`
@@ -21,14 +22,22 @@ func (r *SlackRequest) validate(token string) bool {
 	return r.VerificationToken == token
 }
 
+// SlackChallenge represents the Event API challenge request
 type SlackChallenge struct {
 	Challenge string `json:"challenge"`
 	SlackRequest
 }
 
+// AppMention represents a Mention Event
 type AppMention struct {
 	Event slack.Msg `json:"event"`
 	SlackRequest
+}
+
+// Logger defines our logging contract
+type Logger interface {
+	Println(v ...interface{})
+	Printf(format string, v ...interface{})
 }
 
 var (
@@ -39,14 +48,10 @@ var (
 	log      Logger = &l.Logger{}
 )
 
-type Logger interface {
-	Println(v ...interface{})
-	Printf(format string, v ...interface{})
-}
-
+// SlackResponder builds the http.Handler for Slack requests
 func SlackResponder(cfg *Config, l Logger) func(w http.ResponseWriter, r *http.Request) {
 	log = l
-	api = slack.New(cfg.ApiKey)
+	api = slack.New(cfg.APIKey)
 	config = cfg
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -105,7 +110,7 @@ func processMessage(w http.ResponseWriter, e []byte) {
 
 	users := parseUsers(m.Event.Text)
 	if len(users) < 1 {
-		w.Write([]byte("Couldn't find a user, try using @?"))
+		_, _ = w.Write([]byte("Couldn't find a user, try using @?"))
 		return
 	}
 
