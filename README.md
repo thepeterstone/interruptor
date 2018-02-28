@@ -1,4 +1,5 @@
 # Interruptor
+![](https://travis-ci.org/thepeterstone/interruptor.svg?branch=master)
 
 A silly bot to set channel topics in Slack.
 
