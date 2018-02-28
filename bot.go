@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
+	l "log"
 	"net/http"
 	"regexp"
+	"strings"
 
 	"github.com/nlopes/slack"
 )
@@ -33,9 +34,21 @@ type AppMention struct {
 var (
 	channels []string
 	users    []string
+	api      *slack.Client
+	config   *Config
+	log      Logger = &l.Logger{}
 )
 
-func SlackResponder(cfg *Config) func(w http.ResponseWriter, r *http.Request) {
+type Logger interface {
+	Println(v ...interface{})
+	Printf(format string, v ...interface{})
+}
+
+func SlackResponder(cfg *Config, l Logger) func(w http.ResponseWriter, r *http.Request) {
+	log = l
+	api = slack.New(cfg.ApiKey)
+	config = cfg
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		t, err := ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -83,17 +96,57 @@ func echoChallenge(w http.ResponseWriter, t []byte) {
 	fmt.Fprintf(w, "%s", c.Challenge)
 }
 
-func processMessage(w http.ResponseWriter, t []byte) {
+func processMessage(w http.ResponseWriter, e []byte) {
 	var m AppMention
-	if err := json.Unmarshal(t, &m); err != nil {
+	if err := json.Unmarshal(e, &m); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	log.Printf("\n%+v\n\n", m.Event)
+	users := parseUsers(m.Event.Text)
+	if len(users) < 1 {
+		w.Write([]byte("Couldn't find a user, try using @?"))
+		return
+	}
+
+	var u []string
+	for _, n := range users {
+		ui, err := api.GetUserInfo(n)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		u = append(u, "@"+ui.Name)
+	}
+
+	t := fmt.Sprintf(
+		"%s %s",
+		"Interrupt:",
+		strings.Join(u, " "),
+	)
+	c := channels
+	if c == nil {
+		c = []string{m.Event.Channel}
+	}
+	setChannelTopics(api, c, t)
+	log.Printf("\n%+v\n\n", m)
 }
 
-func setInterruptChannels(message string) {
+func parseUsers(message string) []string {
+	var u []string
+	re := regexp.MustCompile(`<@(\w+)>`)
+	m := re.FindAllStringSubmatch(message, -1)
+	if len(m) < 2 {
+		return nil
+	}
+	for _, n := range m[1] {
+		u = append(u, n)
+	}
+	log.Println(u)
+	return u
+}
+
+func parseChannels(message string) []string {
 	var c []string
 	re := regexp.MustCompile(`<#(\w+)\|(\w+)>`)
 	m := re.FindAllStringSubmatch(message, -1)
@@ -101,12 +154,13 @@ func setInterruptChannels(message string) {
 		c = append(c, n)
 	}
 	log.Println(c)
-	channels = c
+	return c
 }
 
 func setChannelTopics(api *slack.Client, channels []string, message string) {
+	log.Printf("Setting %s topic: %s\n", channels, message)
 	for _, id := range channels {
-		_, err := api.SetChannelTopic(
+		t, err := api.SetChannelTopic(
 			id,
 			message,
 		)
@@ -114,19 +168,8 @@ func setChannelTopics(api *slack.Client, channels []string, message string) {
 			log.Printf("error setting topic for %s: %s", id, err)
 			continue
 		}
+		log.Printf("[%s]: %s\n", id, t)
 	}
-}
-
-func PostPrinter(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	t, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	logRequest(r, t)
 }
 
 func logRequest(r *http.Request, t []byte) {

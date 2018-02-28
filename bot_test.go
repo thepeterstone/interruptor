@@ -3,6 +3,7 @@ package interruptor_test
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/nlopes/slack"
@@ -17,6 +18,7 @@ var _ = Describe("SlackResponder", func() {
 		handler    func(w http.ResponseWriter, r *http.Request)
 		challenge  interruptor.SlackChallenge
 		appMention interruptor.AppMention
+		log        *spyLogger
 		w          *spyWriter
 	)
 
@@ -29,7 +31,8 @@ var _ = Describe("SlackResponder", func() {
 			VerificationToken: "some-token",
 		}
 
-		handler = interruptor.SlackResponder(config)
+		log = newSpyLogger()
+		handler = interruptor.SlackResponder(config, log)
 		challenge = interruptor.SlackChallenge{
 			Challenge:    "some-challenge-string",
 			SlackRequest: baseRequest,
@@ -125,4 +128,22 @@ func (w *spyWriter) Header() http.Header {
 
 func (w *spyWriter) WriteHeader(h int) {
 	w.headers = append(w.headers, h)
+}
+
+type spyLogger struct {
+	messages []interface{}
+}
+
+func newSpyLogger() *spyLogger {
+	return &spyLogger{}
+}
+
+// spyLogger implements interruptor.Logger
+func (l *spyLogger) Println(v ...interface{}) {
+	l.messages = append(l.messages, v)
+}
+
+// spyLogger implements interruptor.Logger
+func (l *spyLogger) Printf(format string, v ...interface{}) {
+	l.messages = append(l.messages, fmt.Sprintf(format, v))
 }
